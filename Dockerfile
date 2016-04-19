@@ -6,14 +6,35 @@
 # Nano 2.2.6-1ubuntu1
 
 FROM ubuntu:14.04
+
 MAINTAINER Chris Gruel (christopher_a_gruel@homedepot.com)
 
 # setup proxy variables
 ENV QA_PROXY_HOST=str-www-proxy2-qa.homedepot.com
 ENV QA_PROXY_PORT=8080
 
-# install wget
-RUN apt-get -y update && apt-get install -y wget && apt-get clean
+# install apps
+RUN apt-get update && apt-get install -y \
+wget \
+maven \
+git \
+nano \
+curl \
+build-essential \
+&& curl -sL https://deb.nodesource.com/setup | sudo bash - && \
+apt-get install -yq nodejs
+
+RUN npm config set strict-ssl false && npm install -g npm
+
+# Install Go
+RUN \
+  mkdir -p /goroot && \
+  curl https://storage.googleapis.com/golang/go1.6.1.linux-amd64.tar.gz | tar xvzf - -C /goroot --strip-components=1
+
+# Set environment variables.
+ENV GOROOT /goroot
+ENV GOPATH /gopath
+ENV PATH $GOROOT/bin:$GOPATH/bin:$PATH
 
 # download certificates
 RUN mkdir certificates
@@ -40,25 +61,16 @@ RUN wget https://cli.run.pivotal.io/stable?release=linux64-binary -O /tmp/cf.tgz
 RUN tar zxf /tmp/cf.tgz -C /usr/bin && chmod 755 /usr/bin/cf
 
 # install maven
-RUN apt-get -y update && apt-get install -y maven
 ENV MAVEN_HOME /usr/share/maven
-
-# install git
-RUN apt-get -y update && apt-get install -y git
 
 # configure git
 RUN git config --global http.sslcainfo "$PWD/certificates/entrust_g2_ca.cer"
 RUN git config --global http.proxy "$QA_PROXY_HOST:$QA_PROXY_PORT"
 RUN git config --global url."https://".insteadOf git://
 
-# install nano
-RUN apt-get -y update && apt-get install -y nano
-
 # install nodejs
-RUN apt-get -y update && apt-get install -y curl
-RUN curl -sL https://deb.nodesource.com/setup_4.x | sudo -E bash -
-RUN apt-get -y update && apt-get install -y nodejs && apt-get install -y build-essential
-RUN ln -s -f /usr/bin/nodejs /usr/bin/node
+#RUN curl -sL https://deb.nodesource.com/setup_4.x | sudo -E bash -
+#RUN ln -s -f /usr/bin/nodejs /usr/bin/node
 
 # configure npm
 RUN npm config set proxy http://$QA_PROXY_HOST:$QA_PROXY_PORT
@@ -71,11 +83,12 @@ RUN npm install -g bower
 #install gulp
 RUN npm install -g gulp
 
-# remove download archive files
-RUN apt-get clean
-
 ENV http_proxy="http://$QA_PROXY_HOST:$QA_PROXY_PORT"
 ENV https_proxy="http://$QA_PROXY_HOST:$QA_PROXY_PORT"
+
+# install cf zero-downtime-push plugin
+RUN git config --global http.sslVerify false && go get github.com/concourse/autopilot && git config --global http.sslVerify true
+RUN cf install-plugin $GOPATH/bin/autopilot -f
 
 # Define default command.
 CMD ["bash"]
