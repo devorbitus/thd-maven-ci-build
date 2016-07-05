@@ -20,6 +20,7 @@ maven \
 git \
 nano \
 curl \
+libxml-xpath-perl \
 build-essential \
 && curl -sL https://deb.nodesource.com/setup | sudo bash - && \
 apt-get install -yq nodejs
@@ -89,6 +90,15 @@ ENV https_proxy="http://$QA_PROXY_HOST:$QA_PROXY_PORT"
 # install cf zero-downtime-push plugin
 RUN git config --global http.sslVerify false && go get github.com/concourse/autopilot && git config --global http.sslVerify true
 RUN cf install-plugin $GOPATH/bin/autopilot -f
+
+# set maven to save dependencies
+RUN mvn org.apache.maven.plugins:maven-dependency-plugin:2.8:get -Dartifact=org.hibernate:hibernate-entitymanager:3.4.0.GA:jar:sources
+RUN mvn org.apache.maven.plugins:maven-dependency-plugin:2.8:get -Dartifact=org.apache.maven.plugins:maven-clean-plugin:2.5:jar:sources
+RUN mvn org.apache.maven.plugins:maven-dependency-plugin:2.8:get -Dartifact=org.apache.maven.surefire:surefire-booter:2.10:jar:sources
+
+# install jq
+RUN curl -o /usr/local/bin/jq -L https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64 \
+           && chmod +x /usr/local/bin/jq
 
 # Define default command.
 CMD ["bash"]
