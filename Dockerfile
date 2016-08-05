@@ -12,6 +12,8 @@ MAINTAINER Chris Gruel (christopher_a_gruel@homedepot.com)
 # setup proxy variables
 ENV QA_PROXY_HOST=str-www-proxy2-qa.homedepot.com
 ENV QA_PROXY_PORT=8080
+ENV GRADLE_VERSION=2.14.1
+ENV GRADLE_HOME=/opt/gradle
 
 # install apps
 RUN apt-get update && apt-get install -y \
@@ -26,6 +28,12 @@ build-essential \
 apt-get install -yq nodejs
 
 RUN npm config set strict-ssl false && npm install -g npm
+
+# Install Gradle
+RUN wget --no-check-certificate --no-cookies https://downloads.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip \
+    && unzip gradle-${GRADLE_VERSION}-bin.zip -d /opt \
+    && ln -s /opt/gradle-${GRADLE_VERSION}/bin/gradle /usr/bin/gradle \
+    && rm -f gradle-${GRADLE_VERSION}-bin.zip
 
 # Install Go
 RUN \
