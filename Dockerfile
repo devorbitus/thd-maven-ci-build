@@ -5,7 +5,7 @@
 # Jenkins 1.643
 # Nano 2.2.6-1ubuntu1
 
-FROM ubuntu:14.04
+FROM ubuntu:14.04.5
 
 MAINTAINER Chris Gruel (christopher_a_gruel@homedepot.com)
 
@@ -15,12 +15,16 @@ ENV QA_PROXY_PORT=8080
 ENV GRADLE_VERSION=2.14.1
 ENV GRADLE_HOME=/opt/gradle
 
+RUN echo "deb http://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list
+RUN sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 642AC823
+
 # install apps
 RUN apt-get update && apt-get install -y \
 wget \
 maven \
 git \
 nano \
+sbt \
 curl \
 libxml-xpath-perl \
 build-essential \
@@ -103,6 +107,9 @@ RUN cf install-plugin $GOPATH/bin/autopilot -f
 RUN mvn org.apache.maven.plugins:maven-dependency-plugin:2.8:get -Dartifact=org.hibernate:hibernate-entitymanager:3.4.0.GA:jar:sources
 RUN mvn org.apache.maven.plugins:maven-dependency-plugin:2.8:get -Dartifact=org.apache.maven.plugins:maven-clean-plugin:2.5:jar:sources
 RUN mvn org.apache.maven.plugins:maven-dependency-plugin:2.8:get -Dartifact=org.apache.maven.surefire:surefire-booter:2.10:jar:sources
+
+# preload sbt dependencies
+RUN sbt update
 
 # install jq
 RUN curl -o /usr/local/bin/jq -L https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64 \
