@@ -17,25 +17,20 @@ ENV GRADLE_HOME=/opt/gradle
 ENV http_proxy="http://$QA_PROXY_HOST:$QA_PROXY_PORT"
 ENV https_proxy="http://$QA_PROXY_HOST:$QA_PROXY_PORT"
 ENV http_proxy_slash="$http_proxy"/
+ENV TERM=xterm-256color
 
 RUN echo "deb http://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list
 RUN sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 642AC823
 
 # install apps
-RUN apt-get update && apt-get install -y \
-wget \
-maven \
-git \
-nano \
-sbt \
-curl \
-libxml-xpath-perl \
-build-essential
-
-RUN apt-get update && apt-get install -y curl -sL https://deb.nodesource.com/setup | sudo bash - && \
-apt-get install -yq nodejs
-
-RUN npm config set strict-ssl false && npm install -g npm
+RUN apt-get update && apt-get install -y wget
+RUN apt-get update && apt-get install -y maven
+RUN apt-get update && apt-get install -y git
+RUN apt-get update && apt-get install -y nano
+RUN apt-get update && apt-get install -y sbt
+RUN apt-get update && apt-get install -y curl
+RUN apt-get update && apt-get install -y libxml-xpath-perl
+RUN apt-get update && apt-get install -y build-essential
 
 # Install Gradle
 RUN wget --no-check-certificate --no-cookies https://downloads.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip \
@@ -102,13 +97,11 @@ RUN git config --global url."https://".insteadOf git://
 
 # install nodejs
 RUN curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
-RUN ln -s -f /usr/bin/nodejs /usr/bin/node
+RUN apt-get install -y nodejs
 
 # configure npm
-RUN npm config set proxy http://$QA_PROXY_HOST:$QA_PROXY_PORT
-RUN npm config set https-proxy http://$QA_PROXY_HOST:$QA_PROXY_PORT
-RUN npm rm
-RUN npm config set registry https://npm.artifactory.homedepot.com/artifactory/api/npm/npm
+RUN npm config -g set proxy http://$QA_PROXY_HOST:$QA_PROXY_PORT
+RUN npm config -g set https-proxy http://$QA_PROXY_HOST:$QA_PROXY_PORT
 
 # install Bower
 RUN npm install -g bower
