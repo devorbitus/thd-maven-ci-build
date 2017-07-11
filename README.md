@@ -1,4 +1,4 @@
-docker-ubuntu-java-maven
+thd-maven-ci-build
 ==================
 This is the Docker Java Maven
 
