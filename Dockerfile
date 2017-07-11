@@ -5,7 +5,7 @@
 # Jenkins 1.643
 # Nano 2.2.6-1ubuntu1
 
-FROM ubuntu:14.04.5
+FROM ubuntu:16.04
 
 MAINTAINER Chris Gruel (christopher_a_gruel@homedepot.com)
 
@@ -17,10 +17,10 @@ ENV GRADLE_HOME=/opt/gradle
 ENV http_proxy="http://$QA_PROXY_HOST:$QA_PROXY_PORT"
 ENV https_proxy="http://$QA_PROXY_HOST:$QA_PROXY_PORT"
 ENV http_proxy_slash="$http_proxy"/
-ENV TERM=xterm-256color
+ENV TERM=xterm
 
-RUN echo "deb http://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list
-RUN sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 642AC823
+RUN echo "deb http://dl.bintray.com/sbt/debian /" | tee -a /etc/apt/sources.list.d/sbt.list
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 642AC823
 
 # install apps
 RUN apt-get update && apt-get install -y wget
@@ -31,6 +31,8 @@ RUN apt-get update && apt-get install -y sbt
 RUN apt-get update && apt-get install -y curl
 RUN apt-get update && apt-get install -y libxml-xpath-perl
 RUN apt-get update && apt-get install -y build-essential
+RUN apt-get update && apt-get install -y unzip
+RUN apt-get update && apt-get install -y locales
 
 # Install Gradle
 RUN wget --no-check-certificate --no-cookies https://downloads.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip \
@@ -52,36 +54,28 @@ ENV PATH $GOROOT/bin:$GOPATH/bin:$PATH
 RUN mkdir certificates
 RUN wget https://www.entrust.com/root-certificates/entrust_g2_ca.cer -O certificates/entrust_g2_ca.cer --no-check-certificate
 
-RUN apt-get update && apt-get install -y zenity
-
-RUN wget https://launchpad.net/~fossfreedom/+archive/packagefixes/+files/banish404_0.1-4_all.deb
-RUN dpkg -i banish404_0.1-4_all.deb
-
-RUN apt-get update && apt-get install -y banish404
-
-RUN banish404
-
 # set shell variables for java installation
-ENV JAVA_VER 8
-ENV JAVA_HOME /usr/lib/jvm/java-8-oracle
+ENV DEBIAN_FRONTEND noninteractive
+ENV JAVA_HOME       /usr/lib/jvm/java-8-oracle
 
-RUN echo 'deb http://ppa.launchpad.net/webupd8team/java/ubuntu trusty main' >> /etc/apt/sources.list
-RUN echo 'deb-src http://ppa.launchpad.net/webupd8team/java/ubuntu trusty main' >> /etc/apt/sources.list
-RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C2518248EEA14886
+## UTF-8
+RUN locale-gen en_US.UTF-8
+ENV LANG       en_US.UTF-8
+ENV LC_ALL     en_US.UTF-8
+
 RUN apt-get update && \
-    echo oracle-java${JAVA_VER}-installer shared/accepted-oracle-license-v1-1 select true | sudo /usr/bin/debconf-set-selections && \
-    apt-get install -y --force-yes --no-install-recommends oracle-java${JAVA_VER}-installer oracle-java${JAVA_VER}-set-default && \
-    apt-get clean && \
-    rm -rf /var/cache/oracle-jdk${JAVA_VER}-installer
+  apt-get dist-upgrade -y
 
-RUN update-java-alternatives -s java-8-oracle
+## Remove any existing JDKs
+RUN apt-get --purge remove -y openjdk*
 
-RUN echo "export JAVA_HOME=/usr/lib/jvm/java-8-oracle" >> ~/.bashrc
-
-RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-# configure symbolic links for the java and javac executables
-RUN update-alternatives --install /usr/bin/java java $JAVA_HOME/bin/java 20000 && update-alternatives --install /usr/bin/javac javac $JAVA_HOME/bin/javac 20000
+## Install Oracle's JDK
+RUN echo "oracle-java8-installer shared/accepted-oracle-license-v1-1 select true" | debconf-set-selections
+RUN echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main" > /etc/apt/sources.list.d/webupd8team-java-trusty.list
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys EEA14886
+RUN apt-get update && \
+  apt-get install -y --no-install-recommends oracle-java8-installer && \
+  apt-get clean all
 
 # download and install cf client
 RUN wget https://cli.run.pivotal.io/stable?release=linux64-binary -O /tmp/cf.tgz --no-check-certificate
@@ -96,7 +90,7 @@ RUN git config --global http.proxy "$QA_PROXY_HOST:$QA_PROXY_PORT"
 RUN git config --global url."https://".insteadOf git://
 
 # install nodejs
-RUN curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+RUN curl -sL https://deb.nodesource.com/setup_6.x | bash -
 RUN apt-get install -y nodejs
 
 # configure npm
