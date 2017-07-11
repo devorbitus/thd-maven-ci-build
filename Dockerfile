@@ -1,7 +1,7 @@
 
 # Ubuntu 14.04 LTS
 # Oracle Java 1.8.0_11 64 bit
-# Maven 3.0.5-1
+# Maven 3.3.9
 # Jenkins 1.643
 # Nano 2.2.6-1ubuntu1
 
@@ -24,10 +24,8 @@ RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 642AC823
 
 # install apps
 RUN apt-get update && apt-get install -y wget
-RUN apt-get update && apt-get install -y maven
 RUN apt-get update && apt-get install -y git
 RUN apt-get update && apt-get install -y nano
-RUN apt-get update && apt-get install -y sbt
 RUN apt-get update && apt-get install -y curl
 RUN apt-get update && apt-get install -y libxml-xpath-perl
 RUN apt-get update && apt-get install -y build-essential
@@ -77,12 +75,24 @@ RUN apt-get update && \
   apt-get install -y --no-install-recommends oracle-java8-installer && \
   apt-get clean all
 
+# Get maven 3.3.9
+RUN wget --no-verbose -O /tmp/apache-maven-3.3.9-bin.tar.gz http://www-eu.apache.org/dist/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz
+
+# Install maven
+RUN tar xzf /tmp/apache-maven-3.3.9-bin.tar.gz -C /opt/
+RUN ln -s /opt/apache-maven-3.3.9 /opt/maven
+RUN ln -s /opt/maven/bin/mvn /usr/local/bin
+RUN rm -f /tmp/apache-maven-3.3.9-bin.tar.gz
+ENV MAVEN_HOME /opt/maven
+
+# Install SBT
+RUN apt-get update && apt-get install -y sbt
+# preload sbt dependencies
+RUN sbt update
+
 # download and install cf client
 RUN wget https://cli.run.pivotal.io/stable?release=linux64-binary -O /tmp/cf.tgz --no-check-certificate
 RUN tar zxf /tmp/cf.tgz -C /usr/bin && chmod 755 /usr/bin/cf
-
-# install maven
-ENV MAVEN_HOME /usr/share/maven
 
 # configure git
 RUN git config --global http.sslcainfo "$PWD/certificates/entrust_g2_ca.cer"
@@ -107,8 +117,6 @@ RUN npm install -g gulp
 RUN git config --global http.sslVerify false && go get github.com/concourse/autopilot && git config --global http.sslVerify true
 RUN cf install-plugin $GOPATH/bin/autopilot -f
 
-# preload sbt dependencies
-RUN sbt update
 
 # install jq
 RUN curl -o /usr/local/bin/jq -L https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64 \
