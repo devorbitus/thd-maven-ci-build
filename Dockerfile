@@ -7,7 +7,7 @@
 
 FROM ubuntu:16.04
 
-MAINTAINER Chris Gruel (christopher_a_gruel@homedepot.com)
+MAINTAINER Chris Gruel (https://github.com/devorbitus)
 
 # setup proxy variables
 ENV QA_PROXY_HOST=thd-svr-proxy-qa.homedepot.com
